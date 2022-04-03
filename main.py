@@ -216,15 +216,7 @@ def encrypt():
     for i in range(num):
         page = file.getPage(i)
         output_pdf.addPage(page)
-    new_window = Toplevel(window)
-    new_window.title = "Encrypt"
-    Label(new_window, text="Enter your password to encrypt").pack()
-    entry = Entry(new_window, width=40)
-    entry.focus_set()
-    entry.pack()
-    password = entry.get()
-    Button(new_window, text="Okay", command=encrypt).pack()
-    print(password)
+    password = "pass"
     output_pdf.encrypt(password)
     with open(sourceFile, "wb") as f:
         output_pdf.write(f)
@@ -234,14 +226,7 @@ def decrypt():
     chooseFile()
     out = PdfFileWriter()
     file = PdfFileReader(sourceFile)
-    new_window = Toplevel(window)
-    new_window.title = "Decrypt"
-    Label(new_window, text="Enter your password to decrypt").pack()
-    entry = Entry(new_window, width=40)
-    entry.focus_set()
-    entry.pack()
-    Button(new_window, text="Okay", command=decrypt).pack()
-    password = entry.get()
+    password = "pass"
     if file.isEncrypted:
         file.decrypt(password)
         for idx in range(file.numPages):
