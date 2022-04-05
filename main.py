@@ -112,7 +112,7 @@ class Notepad:
             file.writelines(text)
         pdf = FPDF()
         pdf.add_page()
-        pdf.set_font("Arial", size=15)
+        pdf.set_font("Arial", size=10)
         file = open("sample.txt", "r")
         for x in file:
             pdf.cell(200, 10, txt=x[:-1], ln=1, align='L')
