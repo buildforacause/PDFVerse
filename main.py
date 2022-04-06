@@ -16,6 +16,7 @@ import pyttsx3
 
 
 window = tkinter.Tk()
+window.title("PDFVerse")
 window.minsize(width=626, height=352)
 window.maxsize(width=626, height=352)
 window.resizable(False, False)
@@ -248,25 +249,49 @@ def play_pdf():
 
 
 def encrypt():
+    global temp_win, entry, output_pdf
     chooseFile()
     output_pdf = PdfFileWriter()
     file = PdfFileReader(sourceFile)
     num = file.numPages
-
     for i in range(num):
         page = file.getPage(i)
         output_pdf.addPage(page)
-    password = "pass"
+    temp_win = Toplevel(window)
+    temp_win.title("Enter password!")
+    temp_win.geometry("300x70")
+    entry = Entry(temp_win)
+    entry.pack()
+    button = Button(temp_win, text="Ok", command=get_pass_encrypted)
+    button.pack()
+
+
+def get_pass_encrypted():
+    password = str(entry.get())
+    temp_win.destroy()
     output_pdf.encrypt(password)
+    showinfo("Success", "File encrypted!")
     with open(sourceFile, "wb") as f:
         output_pdf.write(f)
 
 
 def decrypt():
+    global temp_win, entry, out, file
     chooseFile()
     out = PdfFileWriter()
     file = PdfFileReader(sourceFile)
-    password = "pass"
+    temp_win = Toplevel(window)
+    temp_win.title("Enter password!")
+    temp_win.geometry("300x70")
+    entry = Entry(temp_win)
+    entry.pack()
+    button = Button(temp_win, text="Ok", command=get_pass_decrypted)
+    button.pack()
+
+
+def get_pass_decrypted():
+    password = str(entry.get())
+    temp_win.destroy()
     if file.isEncrypted:
         file.decrypt(password)
         for idx in range(file.numPages):
@@ -274,9 +299,9 @@ def decrypt():
             out.addPage(page)
         with open(sourceFile, "wb") as f:
             out.write(f)
-        print("File decrypted Successfully.")
+        showinfo("Success", "File decrypted Successfully.")
     else:
-        print("File already decrypted.")
+        showinfo("Info", "File already decrypted.")
 
 
 def run():
@@ -301,9 +326,6 @@ def pdf_to_pptx():
     list_files = subprocess.run(["pdf2pptx", sourceFile])
     showinfo("Success", "The file has been converted and saved in the same directory!!")
 
-
-def x():
-    pass
 
 image = tkinter.PhotoImage(file="wallpaper.png")
 canvas = tkinter.Canvas(window, width=626, height=352, bg="#f7f5dd", highlightthickness=0)
