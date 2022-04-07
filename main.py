@@ -2,7 +2,7 @@ import os
 from pygame import mixer
 from tkinter import *
 from tkinter.filedialog import askopenfilename
-from tkinter.messagebox import showinfo, askquestion
+from tkinter.messagebox import showinfo
 from tkinter.ttk import *
 import tkinter
 from tkinter import filedialog
@@ -14,13 +14,14 @@ import pdf2pptx
 import subprocess
 import pyttsx3
 
-
+BUTTON_COLOR = "#efd1a8"
 window = tkinter.Tk()
 window.title("PDFVerse")
 window.minsize(width=626, height=352)
 window.maxsize(width=626, height=352)
 window.resizable(False, False)
 sourceFile = ''
+highlighted_text = []
 
 
 class MP:
@@ -36,9 +37,6 @@ class MP:
         self.pause_resume = tkinter.StringVar()
         self.play_restart.set('Play')
         self.pause_resume.set('Pause')
-
-        load_button = Button(win, text='Upload', width=10, command=play_pdf)
-        load_button.place(x=100, y=60, anchor='center')
 
         play_button = Button(win, textvariable=self.play_restart, width=10, command=self.play)
         play_button.place(x=100, y=180, anchor='center')
@@ -86,7 +84,7 @@ class MP:
         self.win.destroy()
 
 
-class Notepad():
+class Notepad:
     def __init__(self, **kwargs):
         self.__root = Toplevel(window)
         self.__thisWidth = 300
@@ -155,12 +153,15 @@ class Notepad():
         self.__root.destroy()
 
     def __highlight(self):
+        global highlighted_text
         try:
             self.thisTextArea.tag_add("start", "sel.first", "sel.last")
         except tkinter.TclError:
             pass
         else:
             self.thisTextArea.tag_configure("start", background="yellow", foreground="black")
+            content = self.thisTextArea.selection_get()
+            highlighted_text.append(content)
 
     def __clearHighlight(self):
         self.thisTextArea.tag_remove("start", "1.0", 'end')
@@ -185,6 +186,13 @@ class Notepad():
         self.thisTextArea.delete(1.0, END)
 
     def __saveFile(self):
+        with fitz.open(sourceFile) as doc:
+            for page in doc:
+                for text_high in highlighted_text:
+                    text_instances = page.searchFor(text_high)
+                    for inst in text_instances:
+                        highlight = page.addHighlightAnnot(inst)
+                doc.save(r"output.pdf", garbage=4, deflate=True, clean=True)
         text = self.thisTextArea.get(1.0, END)
         with open("sample.txt", "w") as file:
             file.writelines(text)
@@ -211,7 +219,6 @@ class Notepad():
 
 
 def toText():
-    chooseFile()
     try:
         if sourceFile:
             with fitz.open(sourceFile) as doc:
@@ -226,12 +233,32 @@ def toText():
 
 
 def chooseFile():
-    global sourceFile
+    global sourceFile, new_pdf_window
     sourceFile = filedialog.askopenfilename(parent=window, initialdir="/", title='Please select a file',
                                             filetypes=[("Pdf files", ".pdf")])
+    new_pdf_window = Toplevel(window)
+    new_pdf_window.title("Select your tool!")
+    new_pdf_window.minsize(width=626, height=352)
+    new_pdf_window.maxsize(width=626, height=352)
+    new_pdf_window.resizable(False, False)
+    new_pdf_window.config(bg="#f7e8d3")
+    file_button = tkinter.Button(new_pdf_window, text="Encrypt", width=15, height=2, command=encrypt, bg=BUTTON_COLOR)
+    file_button.grid(row=0, column=0, padx=20, pady=8)
+    file_button1 = tkinter.Button(new_pdf_window, text="Decrypt", width=15, height=2, command=decrypt, bg=BUTTON_COLOR)
+    file_button1.grid(row=1, column=0, padx=20, pady=8)
+    file_button2 = tkinter.Button(new_pdf_window, text="To Text", width=15, height=2, command=toText, bg=BUTTON_COLOR)
+    file_button2.grid(row=2, column=0, padx=20, pady=8)
+    file_button3 = tkinter.Button(new_pdf_window, text="To Word", width=15, height=2, command=pdf_to_word, bg=BUTTON_COLOR)
+    file_button3.grid(row=3, column=0, padx=20, pady=8)
+    file_button4 = tkinter.Button(new_pdf_window, text="To Ppt", width=15, height=2, command=pdf_to_pptx, bg=BUTTON_COLOR)
+    file_button4.grid(row=4, column=0, padx=20, pady=8)
+    file_button5 = tkinter.Button(new_pdf_window, text="To Audio", width=15, height=2, command=play_pdf, bg=BUTTON_COLOR)
+    file_button5.grid(row=5, column=0, padx=20, pady=8)
+
 
 def play_pdf():
-    chooseFile()
+    win = Toplevel(window)
+    MP(win)
     with fitz.open(sourceFile) as doc:
         text = ""
         for page in doc:
@@ -241,16 +268,15 @@ def play_pdf():
 
     voices = speechengine.getProperty('voices')
     speechengine.setProperty('voice', voices[2].id)
-    string=str(text)
-    speechengine.setProperty("rate",125)
-    speechengine.setProperty("gender","female")
-    speechengine.save_to_file(string,"string.wav")
+    string = str(text)
+    speechengine.setProperty("rate", 125)
+    speechengine.setProperty("gender", "female")
+    speechengine.save_to_file(string, "string.wav")
     speechengine.runAndWait()
 
 
 def encrypt():
     global temp_win, entry, output_pdf
-    chooseFile()
     output_pdf = PdfFileWriter()
     file = PdfFileReader(sourceFile)
     num = file.numPages
@@ -277,7 +303,6 @@ def get_pass_encrypted():
 
 def decrypt():
     global temp_win, entry, out, file
-    chooseFile()
     out = PdfFileWriter()
     file = PdfFileReader(sourceFile)
     temp_win = Toplevel(window)
@@ -304,13 +329,7 @@ def get_pass_decrypted():
         showinfo("Info", "File already decrypted.")
 
 
-def run():
-    win = Toplevel(window)
-    MP(win)
-
-
 def pdf_to_word():
-    chooseFile()
     pdf_file = sourceFile
     docx_file = sourceFile[:-4] + "-converted-to-word.docx"
     try:
@@ -322,27 +341,15 @@ def pdf_to_word():
 
 
 def pdf_to_pptx():
-    chooseFile()
     list_files = subprocess.run(["pdf2pptx", sourceFile])
     showinfo("Success", "The file has been converted and saved in the same directory!!")
 
 
-image = tkinter.PhotoImage(file="wallpaper.png")
+image = tkinter.PhotoImage(file="pdfverse.png")
 canvas = tkinter.Canvas(window, width=626, height=352, bg="#f7f5dd", highlightthickness=0)
 canvas.create_image(313, 176, image=image)
 canvas.place(x=0, y=0, relwidth=1, relheight=1)
-file_button = tkinter.Button(window, text="Encrypt", width=15, height=2, command=encrypt)
-file_button.grid(row=0, column=0, padx=20, pady=8)
-file_button1 = tkinter.Button(window, text="Decrypt", width=15, height=2, command=decrypt)
-file_button1.grid(row=1, column=0, padx=20, pady=8)
-file_button2 = tkinter.Button(window, text="To Text", width=15, height=2, command=toText)
-file_button2.grid(row=2, column=0, padx=20, pady=8)
-file_button3 = tkinter.Button(window, text="To Word", width=15, height=2, command=pdf_to_word)
-file_button3.grid(row=3, column=0, padx=20, pady=8)
-file_button4 = tkinter.Button(window, text="To Ppt", width=15, height=2, command=pdf_to_pptx)
-file_button4.grid(row=4, column=0, padx=20, pady=8)
-file_button5 = tkinter.Button(window, text="To Audio", width=15, height=2, command=run)
-file_button5.grid(row=5, column=0, padx=20, pady=8)
-
+choose_file_button = tkinter.Button(window, text="Choose Your PDF", width=15, height=2, command=chooseFile, bg=BUTTON_COLOR)
+choose_file_button.place(x=265, y=265)
 
 window.mainloop()
