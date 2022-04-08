@@ -25,7 +25,8 @@ highlighted_text = []
 
 
 class MP:
-    def __init__(self, win):
+    def __init__(self, win, isnotes):
+        self.isnotes = isnotes
         self.win = win
         # Create Tkinter window
         win.geometry('400x400')
@@ -54,7 +55,10 @@ class MP:
         self.playing_state = False
 
     def play(self):
-        self.music_file = "string.wav"
+        if self.isnotes:
+            self.music_file = "notes.wav"
+        else:
+            self.music_file = "string.wav"
         self.play_restart.set('Play')
         mixer.init()
         try:
@@ -252,13 +256,45 @@ def chooseFile():
     file_button3.grid(row=3, column=0, padx=20, pady=8)
     file_button4 = tkinter.Button(new_pdf_window, text="To Ppt", width=15, height=2, command=pdf_to_pptx, bg=BUTTON_COLOR)
     file_button4.grid(row=4, column=0, padx=20, pady=8)
-    file_button5 = tkinter.Button(new_pdf_window, text="To Audio", width=15, height=2, command=play_pdf, bg=BUTTON_COLOR)
+    file_button5 = tkinter.Button(new_pdf_window, text="To Audio", width=15, height=2, command=choose_audio_type, bg=BUTTON_COLOR)
     file_button5.grid(row=5, column=0, padx=20, pady=8)
+
+
+def choose_audio_type():
+    new_interface = Toplevel(new_pdf_window)
+    new_interface.config(bg="#FDFBE2")
+    file_button = tkinter.Button(new_interface, text="Play PDF", width=15, height=2, command=play_pdf, bg=BUTTON_COLOR)
+    file_button.grid(row=0, column=0, padx=20, pady=8)
+    file_button1 = tkinter.Button(new_interface, text="Play Notes", width=15, height=2, command=play_notes, bg=BUTTON_COLOR)
+    file_button1.grid(row=1, column=0, padx=20, pady=8)
+
+
+def play_notes():
+    win = Toplevel(window)
+    MP(win, True)
+    doc = fitz.open(sourceFile)
+    page = doc.load_page
+    highlights = ""
+    for page in doc:
+        for annot in page.annots():
+            highlights += page.get_textbox(annot.rect)
+    print(highlights)
+    if not highlights:
+        showinfo("Error", "There is no highlighted text in your PDF")
+    else:
+        speechengine = pyttsx3.init()
+        voices = speechengine.getProperty('voices')
+        speechengine.setProperty('voice', voices[2].id)
+        string1 = str(highlights)
+        speechengine.setProperty("rate", 125)
+        speechengine.setProperty("gender", "female")
+        speechengine.save_to_file(string1, "notes.wav")
+        speechengine.runAndWait()
 
 
 def play_pdf():
     win = Toplevel(window)
-    MP(win)
+    MP(win, False)
     with fitz.open(sourceFile) as doc:
         text = ""
         for page in doc:
@@ -345,8 +381,8 @@ def pdf_to_pptx():
     showinfo("Success", "The file has been converted and saved in the same directory!!")
 
 
-image = tkinter.PhotoImage(file="pdfverse.png")
-canvas = tkinter.Canvas(window, width=626, height=352, bg="#f7f5dd", highlightthickness=0)
+image = tkinter.PhotoImage(file="pdfverse2.png")
+canvas = tkinter.Canvas(window, width=626, height=352, bg="#FDFBE2", highlightthickness=0)
 canvas.create_image(313, 176, image=image)
 canvas.place(x=0, y=0, relwidth=1, relheight=1)
 choose_file_button = tkinter.Button(window, text="Choose Your PDF", width=15, height=2, command=chooseFile, bg=BUTTON_COLOR)
