@@ -17,8 +17,8 @@ import pyttsx3
 BUTTON_COLOR = "#efd1a8"
 window = tkinter.Tk()
 window.title("PDFVerse")
-window.minsize(width=626, height=352)
-window.maxsize(width=626, height=352)
+window.minsize(width=500, height=352)
+window.maxsize(width=500, height=352)
 window.resizable(False, False)
 sourceFile = ''
 highlighted_text = []
@@ -237,27 +237,33 @@ def toText():
 
 
 def chooseFile():
-    global sourceFile, new_pdf_window
+    global sourceFile, new_pdf_window,logo
     sourceFile = filedialog.askopenfilename(parent=window, initialdir="/", title='Please select a file',
                                             filetypes=[("Pdf files", ".pdf")])
-    new_pdf_window = Toplevel(window)
-    new_pdf_window.title("Select your tool!")
-    new_pdf_window.minsize(width=626, height=352)
-    new_pdf_window.maxsize(width=626, height=352)
-    new_pdf_window.resizable(False, False)
-    new_pdf_window.config(bg="#f7e8d3")
-    file_button = tkinter.Button(new_pdf_window, text="Encrypt", width=15, height=2, command=encrypt, bg=BUTTON_COLOR)
-    file_button.grid(row=0, column=0, padx=20, pady=8)
-    file_button1 = tkinter.Button(new_pdf_window, text="Decrypt", width=15, height=2, command=decrypt, bg=BUTTON_COLOR)
-    file_button1.grid(row=1, column=0, padx=20, pady=8)
-    file_button2 = tkinter.Button(new_pdf_window, text="To Text", width=15, height=2, command=toText, bg=BUTTON_COLOR)
-    file_button2.grid(row=2, column=0, padx=20, pady=8)
-    file_button3 = tkinter.Button(new_pdf_window, text="To Word", width=15, height=2, command=pdf_to_word, bg=BUTTON_COLOR)
-    file_button3.grid(row=3, column=0, padx=20, pady=8)
-    file_button4 = tkinter.Button(new_pdf_window, text="To Ppt", width=15, height=2, command=pdf_to_pptx, bg=BUTTON_COLOR)
-    file_button4.grid(row=4, column=0, padx=20, pady=8)
-    file_button5 = tkinter.Button(new_pdf_window, text="To Audio", width=15, height=2, command=choose_audio_type, bg=BUTTON_COLOR)
-    file_button5.grid(row=5, column=0, padx=20, pady=8)
+    if sourceFile:
+        new_pdf_window = Toplevel(window)
+        new_pdf_window.title("Select your tool!")
+        new_pdf_window.minsize(width=626, height=352)
+        new_pdf_window.maxsize(width=626, height=352)
+        new_pdf_window.resizable(False, False)
+        new_pdf_window.config(bg="#FDFBE2")
+        inner_canvas = tkinter.Canvas(new_pdf_window, width=626, height=352, bg="#FDFBE2", highlightthickness=0)
+        inner_canvas.create_image(313, 176, image=logo)
+        inner_canvas.place(x=0, y=-120)
+        file_button = tkinter.Button(new_pdf_window, text="Encrypt", width=15, height=2, command=encrypt, bg=BUTTON_COLOR)
+        file_button.place(x=100, y=150)
+        file_button1 = tkinter.Button(new_pdf_window, text="Decrypt", width=15, height=2, command=decrypt, bg=BUTTON_COLOR)
+        file_button1.place(x=250, y=150)
+        file_button2 = tkinter.Button(new_pdf_window, text="To Text", width=15, height=2, command=toText, bg=BUTTON_COLOR)
+        file_button2.place(x=400, y=150)
+        file_button3 = tkinter.Button(new_pdf_window, text="To Word", width=15, height=2, command=pdf_to_word, bg=BUTTON_COLOR)
+        file_button3.place(x=100, y=230)
+        file_button4 = tkinter.Button(new_pdf_window, text="To Ppt", width=15, height=2, command=pdf_to_pptx, bg=BUTTON_COLOR)
+        file_button4.place(x=250, y=230)
+        file_button5 = tkinter.Button(new_pdf_window, text="To Audio", width=15, height=2, command=choose_audio_type, bg=BUTTON_COLOR)
+        file_button5.place(x=400, y=230)
+    else:
+        showinfo("Warning","No PDF file chosen")
 
 
 def choose_audio_type():
@@ -380,12 +386,12 @@ def pdf_to_pptx():
     list_files = subprocess.run(["pdf2pptx", sourceFile])
     showinfo("Success", "The file has been converted and saved in the same directory!!")
 
-
+logo = tkinter.PhotoImage(file="logo.png")
 image = tkinter.PhotoImage(file="pdfverse2.png")
-canvas = tkinter.Canvas(window, width=626, height=352, bg="#FDFBE2", highlightthickness=0)
-canvas.create_image(313, 176, image=image)
+canvas = tkinter.Canvas(window, width=500, height=352, bg="#FDFBE2", highlightthickness=0)
+canvas.create_image(250, 176, image=image)
 canvas.place(x=0, y=0, relwidth=1, relheight=1)
 choose_file_button = tkinter.Button(window, text="Choose Your PDF", width=15, height=2, command=chooseFile, bg=BUTTON_COLOR)
-choose_file_button.place(x=265, y=265)
+choose_file_button.place(x=195, y=265)
 
 window.mainloop()
