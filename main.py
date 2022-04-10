@@ -13,6 +13,9 @@ from pdf2docx import parse
 import pdf2pptx
 import subprocess
 import pyttsx3
+import pytesseract
+from pdf2image import convert_from_path
+import glob
 
 BUTTON_COLOR = "#efd1a8"
 window = tkinter.Tk()
@@ -29,7 +32,7 @@ class MP:
         self.isnotes = isnotes
         self.win = win
         # Create Tkinter window
-        win.geometry('400x400')
+        win.geometry('360x50')
         win.title('Music Player')
         win.resizable(0, 0)
 
@@ -40,16 +43,16 @@ class MP:
         self.pause_resume.set('Pause')
 
         play_button = Button(win, textvariable=self.play_restart, width=10, command=self.play)
-        play_button.place(x=100, y=180, anchor='center')
+        play_button.grid(row=1,column=0,padx=10,pady=10)
 
         pause_button = Button(win, textvariable=self.pause_resume, width=10, command=self.pause)
-        pause_button.place(x=100, y=240, anchor='center')
+        pause_button.grid(row=1,column=1,padx=10,pady=10)
 
         stop_button = Button(win, text='Stop', width=10, command=self.stop)
-        stop_button.place(x=100, y=300, anchor='center')
+        stop_button.grid(row=1,column=2,padx=10,pady=10)
 
         close_button = Button(win, text='Close', width=10, command=self.close)
-        close_button.place(x=100, y=360, anchor='center')
+        close_button.grid(row=1,column=3,padx=10,pady=10)
 
         self.music_file = False
         self.playing_state = False
@@ -131,7 +134,7 @@ class Notepad:
         self.__thisFileMenu.add_command(label="Save",
                                         command=self.__saveFile)
         self.__thisFileMenu.add_command(label="Notes to PPTX",
-                                        command=notes_to_pptx())
+                                        command=notes_to_pptx)
         self.__thisFileMenu.add_separator()
         self.__thisFileMenu.add_command(label="Exit",
                                         command=self.__quitApplication)
@@ -233,6 +236,13 @@ def toText():
                 text = ""
                 for page in doc:
                     text += page.get_text()
+            if not text:
+                pdfs = glob.glob(r"1.pdf")
+                pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
+                for pdf_path in pdfs:
+                    pages = convert_from_path(pdf_path, 500, poppler_path=r"C:\Program Files (x86)\poppler-0.68.0\bin")
+                    for pageNum, imgBlob in enumerate(pages):
+                        text+= pytesseract.image_to_string(imgBlob, lang='eng')
             notepad = Notepad(width=600, height=400)
             notepad.thisTextArea.insert(1.0, text)
             notepad.run()
@@ -266,10 +276,10 @@ def chooseFile():
         file_button4.place(x=180, y=230)
         file_button5 = tkinter.Button(new_pdf_window, text="To Audio", width=15, height=2, command=choose_audio_type, bg=BUTTON_COLOR)
         file_button5.place(x=330, y=230)
-        file_button6 = tkinter.Button(new_pdf_window, text="Notes to PPT", width=15, height=2, command=notes_to_pptx(),
+        file_button6 = tkinter.Button(new_pdf_window, text="Notes to PPT", width=15, height=2, command=notes_to_pptx,
                                       bg=BUTTON_COLOR)
         file_button6.place(x=480, y=150)
-        file_button7 = tkinter.Button(new_pdf_window, text="Image PDF to Text", width=15, height=2, command=imagepdf_to_text(),
+        file_button7 = tkinter.Button(new_pdf_window, text="Image PDF to Text", width=15, height=2, command=imagepdf_to_text,
                                       bg=BUTTON_COLOR)
         file_button7.place(x=480, y=230)
     else:
@@ -420,8 +430,8 @@ def notes_to_pdf():
 
 def notes_to_pptx():
     notes_to_pdf()
-    # list_files = subprocess.run(["pdf2pptx", sourceFile])
-    # showinfo("Success", "The file has been converted and saved in the same directory!!")
+    list_files = subprocess.run(["pdf2pptx", sourceFile])
+    showinfo("Success", "The file has been converted and saved in the same directory!!")
 
 
 
