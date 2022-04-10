@@ -279,12 +279,14 @@ def chooseFile():
         file_button6 = tkinter.Button(new_pdf_window, text="Notes to PPT", width=15, height=2, command=notes_to_pptx,
                                       bg=BUTTON_COLOR)
         file_button6.place(x=480, y=150)
-        file_button7 = tkinter.Button(new_pdf_window, text="Image PDF to Text", width=15, height=2, command=imagepdf_to_text,
+        file_button7 = tkinter.Button(new_pdf_window, text="Image PDF to Text", width=15, height=2, command=exiter,
                                       bg=BUTTON_COLOR)
         file_button7.place(x=480, y=230)
     else:
         showinfo("Warning", "No PDF file chosen")
 
+def exiter():
+    window.destroy()
 
 def choose_audio_type():
     new_interface = Toplevel(new_pdf_window)
@@ -430,13 +432,9 @@ def notes_to_pdf():
 
 def notes_to_pptx():
     notes_to_pdf()
-    list_files = subprocess.run(["pdf2pptx", sourceFile])
+    list_files = subprocess.run(["pdf2pptx", "Output/notestopdf.pdf"])
     showinfo("Success", "The file has been converted and saved in the same directory!!")
 
-
-
-def imagepdf_to_text():
-    pass
 
 logo = tkinter.PhotoImage(file="logo.png")
 image = tkinter.PhotoImage(file="pdfverse2.png")
