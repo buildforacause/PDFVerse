@@ -1,8 +1,3 @@
-# image pdf save issue/ highlight issue
-# remove open file notepad option
-# add savefile dialog
-# refactor editing pdf
-
 import os
 from pygame import mixer
 from tkinter import *
@@ -29,8 +24,8 @@ window.maxsize(width=500, height=352)
 window.resizable(False, False)
 sourceFile = ''
 highlighted_text = []
-TESSERACT_PATH = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-POPPLER_PATH = r"C:\Program Files (x86)\poppler-0.68.0\bin"
+TESSERACT_PATH = YOUR_PATH_TO_TESSERACT
+POPPLER_PATH = YOUR_PATH_TO_POPPLER
 
 
 class MP:
