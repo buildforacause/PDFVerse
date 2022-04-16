@@ -1,11 +1,10 @@
 import os
 from pygame import mixer
 from tkinter import *
-from tkinter.filedialog import askopenfilename
+from tkinter.filedialog import askopenfilename, asksaveasfile
 from tkinter.messagebox import showinfo
 from tkinter.ttk import *
 import tkinter
-from tkinter import filedialog
 from PyPDF2 import PdfFileReader, PdfFileWriter
 import fitz
 from fpdf import FPDF
@@ -25,6 +24,8 @@ window.maxsize(width=500, height=352)
 window.resizable(False, False)
 sourceFile = ''
 highlighted_text = []
+TESSERACT_PATH = YOUR_PATH_TO_TESSERACT
+POPPLER_PATH = YOUR_PATH_TO_POPPLER
 
 
 class MP:
@@ -127,10 +128,6 @@ class Notepad:
         self.__root.grid_rowconfigure(0, weight=1)
         self.__root.grid_columnconfigure(0, weight=1)
         self.thisTextArea.grid(sticky=N + E + S + W)
-        self.__thisFileMenu.add_command(label="New",
-                                        command=self.__newFile)
-        self.__thisFileMenu.add_command(label="Open",
-                                        command=self.__openFile)
         self.__thisFileMenu.add_command(label="Save",
                                         command=self.__saveFile)
         self.__thisFileMenu.add_command(label="Notes to PPTX",
@@ -173,48 +170,36 @@ class Notepad:
             self.thisTextArea.tag_configure("start", background="yellow", foreground="black")
             content = self.thisTextArea.selection_get()
             highlighted_text.append(content)
+            print(highlighted_text)
 
     def __clearHighlight(self):
         self.thisTextArea.tag_remove("start", "1.0", 'end')
-
-    def __openFile(self):
-        self.__file = askopenfilename(defaultextension=".txt",
-                                      filetypes=[("All Files", "*.*"),
-                                                 ("Text Documents", "*.txt")])
-
-        if self.__file == "":
-            self.__file = None
-        else:
-            self.__root.title(os.path.basename(self.__file) + " - Notepad")
-            self.thisTextArea.delete(1.0, END)
-            file = open(self.__file, "r")
-            self.thisTextArea.insert(1.0, file.read())
-            file.close()
-
-    def __newFile(self):
-        self.__root.title("Untitled - Notepad")
-        self.__file = None
-        self.thisTextArea.delete(1.0, END)
 
     def __saveFile(self):
         with fitz.open(sourceFile) as doc:
             for page in doc:
                 for text_high in highlighted_text:
-                    text_instances = page.searchFor(text_high)
+                    text_instances = page.search_for(text_high)
                     for inst in text_instances:
-                        highlight = page.addHighlightAnnot(inst)
+                        highlight = page.add_highlight_annot(inst)
                 doc.save(r"output.pdf", garbage=4, deflate=True, clean=True)
         text = self.thisTextArea.get(1.0, END)
-        with open("sample.txt", "w") as file:
+        with open("sample.txt", "w", encoding='utf-8') as file:
             file.writelines(text)
         pdf = FPDF()
         pdf.add_page()
-        pdf.set_font("Arial", size=10)
-        file = open("sample.txt", "r")
+        pdf.add_font("Arial1", "", "arial.ttf", uni=True)
+        pdf.set_font("Arial1", size=10)
+        file = open("sample.txt", "r", encoding='utf-8')
         for x in file:
             pdf.cell(200, 10, txt=x[:-1], ln=1, align='L')
         file.close()
-        pdf.output(sourceFile)
+        try:
+            pdf.output(f"{sourceFile}-edited.pdf", "F")
+        except:
+            showinfo("Error", "Couldn't save your file")
+        else:
+            showinfo("Success", "File has been saved")
 
     def __cut(self):
         self.thisTextArea.event_generate("<<Cut>>")
@@ -237,24 +222,25 @@ def toText():
                 for page in doc:
                     text += page.get_text()
             if not text:
-                pdfs = glob.glob(r"1.pdf")
-                pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
+                pdfs = glob.glob(sourceFile)
+                pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
                 for pdf_path in pdfs:
-                    pages = convert_from_path(pdf_path, 500, poppler_path=r"C:\Program Files (x86)\poppler-0.68.0\bin")
+                    pages = convert_from_path(pdf_path, 500, poppler_path=POPPLER_PATH)
                     for pageNum, imgBlob in enumerate(pages):
-                        text+= pytesseract.image_to_string(imgBlob, lang='eng')
+                        text += pytesseract.image_to_string(imgBlob, lang='eng')
             notepad = Notepad(width=600, height=400)
             notepad.thisTextArea.insert(1.0, text)
             notepad.run()
     except:
-        showinfo("Error")
+        showinfo("Error", "The page contains no text!")
 
 
 def chooseFile():
-    global sourceFile, new_pdf_window,logo
-    sourceFile = filedialog.askopenfilename(parent=window, initialdir="/", title='Please select a file',
-                                            filetypes=[("Pdf files", ".pdf")])
+    global sourceFile, new_pdf_window, logo, highlighted_text
+    sourceFile = askopenfilename(parent=window, initialdir="/", title='Please select a file',
+                                 filetypes=[("Pdf files", ".pdf")])
     if sourceFile:
+        highlighted_text = []
         new_pdf_window = Toplevel(window)
         new_pdf_window.title("Select your tool!")
         new_pdf_window.minsize(width=626, height=352)
@@ -279,14 +265,26 @@ def chooseFile():
         file_button6 = tkinter.Button(new_pdf_window, text="Notes to PPT", width=15, height=2, command=notes_to_pptx,
                                       bg=BUTTON_COLOR)
         file_button6.place(x=480, y=150)
-        file_button7 = tkinter.Button(new_pdf_window, text="Image PDF to Text", width=15, height=2, command=exiter,
+        file_button7 = tkinter.Button(new_pdf_window, text="Merge PDFs", width=15, height=2, command=merge,
                                       bg=BUTTON_COLOR)
         file_button7.place(x=480, y=230)
     else:
         showinfo("Warning", "No PDF file chosen")
 
-def exiter():
-    window.destroy()
+
+def merge():
+    file = askopenfilename(parent=window, initialdir="/", title='Please select a file to merge',
+                           filetypes=[("Pdf files", ".pdf")])
+    try:
+        with fitz.open(sourceFile) as doc1:
+            with fitz.open(file) as doc2:
+                doc1.insert_pdf(doc2)
+                doc1.save(f"{sourceFile}-merged.pdf")
+                showinfo("Success", "The merged file has been saved into the first PDF's directory")
+    except:
+        showinfo("Something went wrong", "The PDF file may be corrupted or is encrypted")
+
+
 
 def choose_audio_type():
     new_interface = Toplevel(new_pdf_window)
@@ -298,18 +296,17 @@ def choose_audio_type():
 
 
 def play_notes():
-    win = Toplevel(window)
-    MP(win, True)
     doc = fitz.open(sourceFile)
     page = doc.load_page
     highlights = ""
     for page in doc:
         for annot in page.annots():
             highlights += page.get_textbox(annot.rect)
-    print(highlights)
     if not highlights:
         showinfo("Error", "There is no highlighted text in your PDF")
     else:
+        win = Toplevel(window)
+        MP(win, True)
         speechengine = pyttsx3.init()
         voices = speechengine.getProperty('voices')
         speechengine.setProperty('voice', voices[2].id)
@@ -327,9 +324,7 @@ def play_pdf():
         text = ""
         for page in doc:
             text += page.get_text()
-
     speechengine = pyttsx3.init()
-
     voices = speechengine.getProperty('voices')
     speechengine.setProperty('voice', voices[2].id)
     string = str(text)
